@@ -21,6 +21,12 @@ sub arp {
 
     return \@entries;
 }
+sub collect {
+    my ($self, $ssh, @args) = @_;
+    return {
+        arp => $self->arp($ssh, @args),
+    };
+}
 
 1;
 
