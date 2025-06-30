@@ -29,4 +29,5 @@ jobs:
           context: .
           file: Dockerfile.backend
           push: true
-          tags: docker.io/Gr8BigApe/netdisco-wcc:latest
+          tags: docker.io/gr8bigape/netdisco-wcc:latest
+
