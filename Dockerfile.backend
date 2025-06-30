@@ -2,24 +2,36 @@ FROM netdisco/netdisco:latest-backend
 
 USER root
 
-# Install build tools and cpanminus
+# Install system build tools and libpcap-dev (needed for some network-related Perl modules)
 RUN apk update && \
-    apk add --no-cache curl make gcc perl-dev musl-dev && \
+    apk add --no-cache \
+        curl \
+        make \
+        gcc \
+        perl-dev \
+        musl-dev \
+        libpcap-dev && \
     curl -L https://cpanmin.us | perl - App::cpanminus && \
     apk del curl make gcc perl-dev musl-dev && \
     rm -rf /var/cache/apk/*
 
-# Set environment for local::lib Perl modules
+# Set environment variables for Perl local::lib and ensure cpanm is in PATH
 ENV PERL_LOCAL_LIB_ROOT=/home/netdisco/perl5 \
+    PERL_MB_OPT="--install_base /home/netdisco/perl5" \
+    PERL_MM_OPT="INSTALL_BASE=/home/netdisco/perl5" \
     PERL5LIB=/home/netdisco/perl5/lib/perl5 \
     PATH=/home/netdisco/perl5/bin:$PATH
 
-# Install Net::MAC using cpanm into local path
-RUN /home/netdisco/perl5/bin/cpanm --local-lib=/home/netdisco/perl5 Net::MAC
+# Install Net::MAC module using cpanm
+RUN /home/netdisco/perl5/bin/cpanm -v --local-lib=/home/netdisco/perl5 Net::MAC || cat /root/.cpanm/build.log || true
 
-# Copy custom plugin files (will be injected by Docker Compose volumes too)
+# Copy in your custom plugins
 COPY custom_plugins/SNMP/Info/Layer3/PaloAlto.pm /home/netdisco/perl5/lib/perl5/SNMP/Info/Layer3/PaloAlto.pm
 COPY custom_plugins/PaloAlto.pm /home/netdisco/perl5/lib/perl5/App/Netdisco/SSHCollector/Platform/PaloAlto.pm
 
-# Reset back to the netdisco user
+# Ensure correct permissions (optional safety step)
+RUN chown -R netdisco:netdisco /home/netdisco/perl5
+
+# Reset to non-root user
 USER netdisco
+
